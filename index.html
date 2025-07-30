@@ -1,50 +1,105 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Monedas para estudiantes</title>
-<style>
-  body { font-family: Arial, sans-serif; background: #f0f8ff; padding: 20px; }
-  table { border-collapse: collapse; width: 100%; max-width: 600px; margin: auto; }
-  th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-  th { background: #0066cc; color: white; }
-  button { padding: 5px 10px; margin: 2px; cursor: pointer; }
-  button:hover { background-color: #004080; color: white; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GeoPesos</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f8ff; padding: 20px; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; max-width: 700px; margin: auto; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #007bff; color: white; }
+    button { padding: 6px 12px; margin: 2px; }
+  </style>
 </head>
 <body>
 
-<h1>Monedas para estudiantes</h1>
+<h1>Monedas para Estudiantes</h1>
 
 <table>
   <thead>
-    <tr><th>Nombre</th><th>Monedas</th><th>Acciones</th></tr>
+    <tr>
+      <th>Nombre</th>
+      <th>Monedas</th>
+      <th>Acciones</th>
+    </tr>
   </thead>
   <tbody id="contenido-tabla"></tbody>
 </table>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 <script>
-const GOOGLE_SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTctPK3hWLNDSIp-4EmEgWELkzlSBysObsGsTAWBwhH-uBSL__CgQrzv2gLRcdRfkPSQmrbaLlQRRWP/pub?gid=0&single=true&output=csv";
-
-// Proxy para evitar errores CORS (puedes cambiar por otro proxy si quieres)
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTctPK3hWLNDSIp-4EmEgWELkzlSBysObsGsTAWBwhH-uBSL__CgQrzv2gLRcdRfkPSQmrbaLlQRRWP/pub?gid=0&single=true&output=csv";
 const PROXY = "https://cors-anywhere.herokuapp.com/";
+const PASS = "miClave123";
 
 let estudiantes = [];
 
+function pedirContrasena() {
+  const clave = prompt("Contraseña para editar:");
+  return clave === PASS;
+}
+
+function leerMonedas() {
+  return JSON.parse(localStorage.getItem("monedas") || "{}");
+}
+
+function guardarMonedas(monedas) {
+  localStorage.setItem("monedas", JSON.stringify(monedas));
+}
+
 function mostrarTabla() {
-  const monedas = JSON.parse(localStorage.getItem("monedas") || "{}");
   const cuerpo = document.getElementById("contenido-tabla");
+  const monedas = leerMonedas();
   cuerpo.innerHTML = "";
 
-  estudiantes.forEach(({ Nombre }) => {
-    if (!Nombre) return;
-    const cantMonedas = monedas[Nombre] || 0;
+  estudiantes.forEach(e => {
+    if (!e.Nombre) return;
     const fila = document.createElement("tr");
+    const cantidad = monedas[e.Nombre] || 0;
     fila.innerHTML = `
-      <td>${Nombre}</td>
-      <td>${cantMonedas}</td>
+      <td>${e.Nombre}</td>
+      <td>${cantidad}</td>
       <td>
-        <button onclick="premiarMonedas('${Nombre}')">+5 Monedas</button>
-        <button onclick="quitarMonedas('${Nombre}')">Quitar Monedas</bu
+        <button onclick="sumar('${e.Nombre}')">+5</button>
+        <button onclick="resetear('${e.Nombre}')">Reset</button>
+      </td>
+    `;
+    cuerpo.appendChild(fila);
+  });
+}
+
+function sumar(nombre) {
+  if (!pedirContrasena()) return alert("Contraseña incorrecta.");
+  const monedas = leerMonedas();
+  monedas[nombre] = (monedas[nombre] || 0) + 5;
+  guardarMonedas(monedas);
+  mostrarTabla();
+}
+
+function resetear(nombre) {
+  if (!pedirContrasena()) return alert("Contraseña incorrecta.");
+  const monedas = leerMonedas();
+  monedas[nombre] = 0;
+  guardarMonedas(monedas);
+  mostrarTabla();
+}
+
+// Cargar datos desde Google Sheets usando proxy
+Papa.parse(PROXY + SHEET_URL, {
+  download: true,
+  header: true,
+  complete: function(result) {
+    estudiantes = result.data.filter(e => e.Nombre && e.Nombre.trim() !== "");
+    mostrarTabla();
+  },
+  error: function(err) {
+    console.error("Error al cargar CSV:", err);
+    alert("No se pudieron cargar los datos.");
+  }
+});
+</script>
+
+</body>
+</html>

@@ -21,40 +21,25 @@
   <thead>
     <tr><th>Nombre</th><th>Monedas</th><th>Acciones</th></tr>
   </thead>
-  <tbody id="contenido-tabla">
-    <!-- Se llenará aquí -->
-  </tbody>
+  <tbody id="contenido-tabla"></tbody>
 </table>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 <script>
-const PASSWORD_ADMIN = "miClave123"; // Cambia la contraseña aquí
+const GOOGLE_SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTctPK3hWLNDSIp-4EmEgWELkzlSBysObsGsTAWBwhH-uBSL__CgQrzv2gLRcdRfkPSQmrbaLlQRRWP/pub?gid=0&single=true&output=csv";
+
+// Proxy para evitar errores CORS (puedes cambiar por otro proxy si quieres)
+const PROXY = "https://cors-anywhere.herokuapp.com/";
 
 let estudiantes = [];
 
-function pedirContrasena() {
-  const pass = prompt("Ingresa la contraseña para modificar las monedas:");
-  if (pass === PASSWORD_ADMIN) return true;
-  alert("Contraseña incorrecta.");
-  return false;
-}
-
-function guardarMonedas(monedas) {
-  localStorage.setItem("monedas", JSON.stringify(monedas));
-}
-
-function leerMonedas() {
-  const monedasStr = localStorage.getItem("monedas");
-  return monedasStr ? JSON.parse(monedasStr) : {};
-}
-
 function mostrarTabla() {
-  const monedas = leerMonedas();
+  const monedas = JSON.parse(localStorage.getItem("monedas") || "{}");
   const cuerpo = document.getElementById("contenido-tabla");
   cuerpo.innerHTML = "";
 
   estudiantes.forEach(({ Nombre }) => {
-    if (!Nombre) return; // Evita filas vacías
+    if (!Nombre) return;
     const cantMonedas = monedas[Nombre] || 0;
     const fila = document.createElement("tr");
     fila.innerHTML = `
@@ -62,46 +47,4 @@ function mostrarTabla() {
       <td>${cantMonedas}</td>
       <td>
         <button onclick="premiarMonedas('${Nombre}')">+5 Monedas</button>
-        <button onclick="quitarMonedas('${Nombre}')">Quitar Monedas</button>
-      </td>
-    `;
-    cuerpo.appendChild(fila);
-  });
-}
-
-function premiarMonedas(nombre) {
-  if (!pedirContrasena()) return;
-  const monedas = leerMonedas();
-  monedas[nombre] = (monedas[nombre] || 0) + 5;
-  guardarMonedas(monedas);
-  mostrarTabla();
-  alert(`${nombre} ha recibido 5 monedas.`);
-}
-
-function quitarMonedas(nombre) {
-  if (!pedirContrasena()) return;
-  const monedas = leerMonedas();
-  monedas[nombre] = 0;
-  guardarMonedas(monedas);
-  mostrarTabla();
-  alert(`Las monedas de ${nombre} han sido reseteadas.`);
-}
-
-// Cambia esta URL por la URL CSV pública de tu Google Sheet
-https://docs.google.com/spreadsheets/d/e/2PACX-1vTctPK3hWLNDSIp-4EmEgWELkzlSBysObsGsTAWBwhH-uBSL__CgQrzv2gLRcdRfkPSQmrbaLlQRRWP/pub?output=csv
-
-Papa.parse(CSV_URL, {
-  download: true,
-  header: true,
-  complete: function(results) {
-    estudiantes = results.data.filter(e => e.Nombre && e.Nombre.trim() !== "");
-    mostrarTabla();
-  },
-  error: function(err) {
-    alert("Error cargando CSV: " + err);
-  }
-});
-</script>
-
-</body>
-</html>
+        <button onclick="quitarMonedas('${Nombre}')">Quitar Monedas</bu
